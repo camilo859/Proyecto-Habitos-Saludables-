@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -10,12 +10,23 @@ import {
 } from "react-native";
 import HabitCard from "../components/HabitCard";
 import AppLogo from "../components/AppLogo";
+import NotificationBell from "../components/NotificationBell";
 import { habits, categories } from "../utils/dummyData";
 
-export default function HomeScreen({ navigation }) {
+export default function HomeScreen({ route, navigation }) {
   const { width } = useWindowDimensions();
   const isTablet = width > 600;
   const [selectedCategory, setSelectedCategory] = useState("Todas");
+
+  // Nombre recibido desde WelcomeScreen
+  const userName = route.params?.userName ?? "Usuario";
+
+  // Poner la campanita en el header
+  useEffect(() => {
+    navigation.setOptions({
+      headerRight: () => <NotificationBell />,
+    });
+  }, [navigation]);
 
   // --- datos computados ---
   const filteredHabits = useMemo(() => {
@@ -29,10 +40,10 @@ export default function HomeScreen({ navigation }) {
     perfect: habits.filter((h) => h.failures === 0).length,
   }), []);
 
-  // --- handlers con useCallback ---
+  // --- handlers ---
   const handleHabitPress = useCallback(
-    (habit) => navigation.navigate("HabitDetail", { habit }),
-    [navigation]
+    (habit) => navigation.navigate("HabitDetail", { habit, userName }),
+    [navigation, userName]
   );
 
   const handleCategoryPress = useCallback(
@@ -64,18 +75,22 @@ export default function HomeScreen({ navigation }) {
     [handleHabitPress]
   );
 
+  // --- header de la FlatList ---
   const ListHeader = useMemo(
     () => (
       <>
-        {/* Hero header con logo */}
+        {/* Hero */}
         <View style={[styles.hero, { paddingHorizontal: isTablet ? 40 : 20 }]}>
           <StatusBar barStyle="light-content" backgroundColor="#1D4ED8" />
           <AppLogo size={isTablet ? "md" : "sm"} dark />
+          <Text style={[styles.heroGreeting, { fontSize: isTablet ? 16 : 14 }]}>
+            ¡Hola, {userName}! 👋
+          </Text>
           <Text style={[styles.heroTitle, { fontSize: isTablet ? 26 : 22 }]}>
             Mis Hábitos Saludables
           </Text>
 
-          {/* Cards de resumen */}
+          {/* Resumen */}
           <View style={styles.summaryRow}>
             <View style={styles.summaryCard}>
               <Text style={styles.summaryValue}>{summary.total}</Text>
@@ -92,7 +107,7 @@ export default function HomeScreen({ navigation }) {
           </View>
         </View>
 
-        {/* Filtros de categoría */}
+        {/* Filtros */}
         <FlatList
           data={categories}
           horizontal
@@ -113,7 +128,7 @@ export default function HomeScreen({ navigation }) {
         </Text>
       </>
     ),
-    [isTablet, summary, renderCategory, selectedCategory, filteredHabits.length]
+    [isTablet, summary, renderCategory, selectedCategory, filteredHabits.length, userName]
   );
 
   return (
@@ -126,9 +141,7 @@ export default function HomeScreen({ navigation }) {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
-          <Text style={styles.emptyText}>
-            No hay hábitos en esta categoría.
-          </Text>
+          <Text style={styles.emptyText}>No hay hábitos en esta categoría.</Text>
         }
       />
     </View>
@@ -136,25 +149,24 @@ export default function HomeScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F1F5F9",
-  },
+  container: { flex: 1, backgroundColor: "#F1F5F9" },
   hero: {
     backgroundColor: "#2563EB",
     paddingTop: 16,
     paddingBottom: 26,
   },
+  heroGreeting: {
+    color: "#BFDBFE",
+    marginTop: 12,
+    marginBottom: 2,
+    fontWeight: "600",
+  },
   heroTitle: {
     fontWeight: "800",
     color: "#FFFFFF",
-    marginTop: 12,
     marginBottom: 16,
   },
-  summaryRow: {
-    flexDirection: "row",
-    gap: 10,
-  },
+  summaryRow: { flexDirection: "row", gap: 10 },
   summaryCard: {
     flex: 1,
     backgroundColor: "rgba(255,255,255,0.15)",
@@ -162,26 +174,15 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     alignItems: "center",
   },
-  summaryValue: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#FFFFFF",
-  },
-  summaryLabel: {
-    fontSize: 11,
-    color: "#BFDBFE",
-    marginTop: 3,
-  },
+  summaryValue: { fontSize: 20, fontWeight: "700", color: "#FFFFFF" },
+  summaryLabel: { fontSize: 11, color: "#BFDBFE", marginTop: 3 },
   chipsList: {
     maxHeight: 54,
     backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
     borderBottomColor: "#F1F5F9",
   },
-  chipsContainer: {
-    paddingVertical: 11,
-    gap: 8,
-  },
+  chipsContainer: { paddingVertical: 11, gap: 8 },
   chip: {
     paddingHorizontal: 16,
     paddingVertical: 7,
@@ -190,19 +191,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E2E8F0",
   },
-  chipActive: {
-    backgroundColor: "#2563EB",
-    borderColor: "#2563EB",
-  },
-  chipText: {
-    fontSize: 13,
-    color: "#64748B",
-    fontWeight: "500",
-  },
-  chipTextActive: {
-    color: "#FFFFFF",
-    fontWeight: "700",
-  },
+  chipActive: { backgroundColor: "#2563EB", borderColor: "#2563EB" },
+  chipText: { fontSize: 13, color: "#64748B", fontWeight: "500" },
+  chipTextActive: { color: "#FFFFFF", fontWeight: "700" },
   sectionLabel: {
     fontSize: 12,
     fontWeight: "700",
@@ -212,9 +203,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     marginBottom: 4,
   },
-  listContent: {
-    paddingBottom: 32,
-  },
+  listContent: { paddingBottom: 32 },
   emptyText: {
     textAlign: "center",
     marginTop: 50,

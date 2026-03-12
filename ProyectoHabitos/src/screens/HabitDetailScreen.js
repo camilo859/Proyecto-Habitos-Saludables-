@@ -15,7 +15,7 @@ import {
 } from "../utils/habitRules";
 
 export default function HabitDetailScreen({ route, navigation }) {
-  const { habit } = route.params;
+  const { habit, userName } = route.params;
   const { width } = useWindowDimensions();
   const isTablet = width > 600;
 
@@ -112,6 +112,7 @@ export default function HabitDetailScreen({ route, navigation }) {
         activeOpacity={0.85}
         onPress={() =>
           navigation.navigate("Profile", {
+            userName,
             lastHabit:    habit.name,
             lastStreak:   habit.streak,
             lastFailures: habit.failures,

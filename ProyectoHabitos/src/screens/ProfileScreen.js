@@ -24,6 +24,7 @@ export default function ProfileScreen({ route }) {
   const isTablet = width > 600;
 
   // route.params puede ser undefined si se navega directo (seguridad)
+  const userName     = route.params?.userName     ?? "Usuario";
   const lastHabit    = route.params?.lastHabit    ?? "—";
   const lastStreak   = route.params?.lastStreak   ?? 0;
   const lastFailures = route.params?.lastFailures ?? 0;
@@ -79,7 +80,7 @@ export default function ProfileScreen({ route }) {
           </View>
         </View>
         <Text style={[styles.name, { fontSize: isTablet ? 24 : 20 }]}>
-          {userProfile.name}
+          {userName}
         </Text>
         <Text style={styles.username}>{userProfile.username}</Text>
         <Text style={styles.joined}>Miembro desde {userProfile.joinedDate}</Text>

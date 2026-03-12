@@ -2,9 +2,10 @@ import React from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
-import HomeScreen       from "../screens/HomeScreen";
+import WelcomeScreen     from "../screens/WelcomeScreen";
+import HomeScreen        from "../screens/HomeScreen";
 import HabitDetailScreen from "../screens/HabitDetailScreen";
-import ProfileScreen    from "../screens/ProfileScreen";
+import ProfileScreen     from "../screens/ProfileScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -12,6 +13,7 @@ export default function StackNavigator() {
   return (
     <NavigationContainer>
       <Stack.Navigator
+        initialRouteName="Welcome"
         screenOptions={{
           headerStyle: { backgroundColor: "#2563EB" },
           headerTintColor: "#fff",
@@ -22,9 +24,14 @@ export default function StackNavigator() {
         }}
       >
         <Stack.Screen
+          name="Welcome"
+          component={WelcomeScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
           name="Home"
           component={HomeScreen}
-          options={{ headerShown: false }}  // el hero header propio reemplaza el default
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name="HabitDetail"
