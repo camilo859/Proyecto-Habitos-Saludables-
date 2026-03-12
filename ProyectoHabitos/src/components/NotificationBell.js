@@ -9,14 +9,10 @@ import {
   TouchableWithoutFeedback,
   useWindowDimensions,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { generateNotifications, formatRelativeTime } from "../utils/notifications";
 import { habits } from "../utils/dummyData";
 
-/**
- * NotificationBell — ícono de campanita con badge de conteo
- * y modal de lista de notificaciones.
- * Se usa en el header de HomeScreen.
- */
 export default function NotificationBell() {
   const { width } = useWindowDimensions();
   const [visible, setVisible] = useState(false);
@@ -46,13 +42,12 @@ export default function NotificationBell() {
           onPress={() => markOneRead(item.id)}
           activeOpacity={0.75}
         >
-          {/* Dot de no leído */}
-          {!isRead && <View style={[styles.unreadDot, { backgroundColor: item.color }]} />}
-
+          {!isRead && (
+            <View style={[styles.unreadDot, { backgroundColor: item.color }]} />
+          )}
           <View style={[styles.notifIconWrap, { backgroundColor: item.color + "18" }]}>
             <Text style={styles.notifIcon}>{item.icon}</Text>
           </View>
-
           <View style={styles.notifBody}>
             <Text style={[styles.notifTitle, isRead && styles.notifTitleRead]}>
               {item.title}
@@ -72,13 +67,17 @@ export default function NotificationBell() {
 
   return (
     <>
-      {/* Campanita */}
+      {/* Campanita con ícono vectorial */}
       <TouchableOpacity
         style={styles.bellBtn}
         onPress={() => setVisible(true)}
         activeOpacity={0.75}
       >
-        <Text style={styles.bellIcon}>🔔</Text>
+        <Ionicons
+          name={unreadCount > 0 ? "notifications" : "notifications-outline"}
+          size={26}
+          color="#FFFFFF"
+        />
         {unreadCount > 0 && (
           <View style={styles.badge}>
             <Text style={styles.badgeText}>
@@ -88,7 +87,7 @@ export default function NotificationBell() {
         )}
       </TouchableOpacity>
 
-      {/* Modal de notificaciones */}
+      {/* Modal */}
       <Modal
         visible={visible}
         transparent
@@ -100,17 +99,25 @@ export default function NotificationBell() {
         </TouchableWithoutFeedback>
 
         <View style={[styles.panel, { width: Math.min(width - 32, 420) }]}>
-          {/* Cabecera del panel */}
+          {/* Header del panel */}
           <View style={styles.panelHeader}>
-            <Text style={styles.panelTitle}>Notificaciones</Text>
-            <View style={styles.panelHeaderRight}>
+            <View style={styles.panelTitleRow}>
+              <Ionicons name="notifications" size={18} color="#2563EB" />
+              <Text style={styles.panelTitle}>Notificaciones</Text>
+              {unreadCount > 0 && (
+                <View style={styles.countBadge}>
+                  <Text style={styles.countBadgeText}>{unreadCount}</Text>
+                </View>
+              )}
+            </View>
+            <View style={styles.panelActions}>
               {unreadCount > 0 && (
                 <TouchableOpacity onPress={markAllRead} style={styles.markAllBtn}>
                   <Text style={styles.markAllText}>Marcar todo leído</Text>
                 </TouchableOpacity>
               )}
               <TouchableOpacity onPress={() => setVisible(false)}>
-                <Text style={styles.closeBtn}>✕</Text>
+                <Ionicons name="close" size={22} color="#94A3B8" />
               </TouchableOpacity>
             </View>
           </View>
@@ -136,16 +143,13 @@ export default function NotificationBell() {
 const styles = StyleSheet.create({
   bellBtn: {
     position: "relative",
-    padding: 4,
+    padding: 6,
     marginRight: 4,
-  },
-  bellIcon: {
-    fontSize: 22,
   },
   badge: {
     position: "absolute",
-    top: 0,
-    right: 0,
+    top: 2,
+    right: 2,
     backgroundColor: "#EF4444",
     borderRadius: 10,
     minWidth: 18,
@@ -182,20 +186,36 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 18,
+    paddingHorizontal: 16,
     paddingVertical: 14,
     borderBottomWidth: 1,
     borderBottomColor: "#F1F5F9",
+  },
+  panelTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
   },
   panelTitle: {
     fontSize: 16,
     fontWeight: "800",
     color: "#1E293B",
   },
-  panelHeaderRight: {
+  countBadge: {
+    backgroundColor: "#EFF6FF",
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 20,
+  },
+  countBadgeText: {
+    fontSize: 11,
+    color: "#2563EB",
+    fontWeight: "700",
+  },
+  panelActions: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: 10,
   },
   markAllBtn: {
     backgroundColor: "#EFF6FF",
@@ -208,14 +228,7 @@ const styles = StyleSheet.create({
     color: "#2563EB",
     fontWeight: "700",
   },
-  closeBtn: {
-    fontSize: 16,
-    color: "#94A3B8",
-    fontWeight: "700",
-  },
-  list: {
-    maxHeight: 400,
-  },
+  list: { maxHeight: 400 },
   notifItem: {
     flexDirection: "row",
     alignItems: "flex-start",
@@ -229,7 +242,7 @@ const styles = StyleSheet.create({
   },
   unreadDot: {
     position: "absolute",
-    top: 18,
+    top: 20,
     left: 6,
     width: 7,
     height: 7,
