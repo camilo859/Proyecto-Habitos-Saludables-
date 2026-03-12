@@ -7,13 +7,15 @@ import {
   ScrollView,
   FlatList,
 } from "react-native";
-import { habits } from "../utils/dummyData";
+import { habits, userProfile } from "../utils/dummyData";
+import { getLevelColor, getLevelLabel } from "../utils/habitRules";
+import AppLogo from "../components/AppLogo";
 
-// Stats row item - extracted for FlatList use
-const StatItem = React.memo(({ label, value, color }) => (
-  <View style={[styles.statItem, { borderLeftColor: color }]}>
-    <Text style={[styles.statValue, { color }]}>{value}</Text>
-    <Text style={styles.statLabel}>{label}</Text>
+/** Fila de estadística individual — memoizada para FlatList */
+const StatRow = React.memo(({ label, value, color }) => (
+  <View style={[styles.statRow, { borderLeftColor: color }]}>
+    <Text style={styles.statRowLabel}>{label}</Text>
+    <Text style={[styles.statRowValue, { color }]}>{value}</Text>
   </View>
 ));
 
@@ -21,30 +23,43 @@ export default function ProfileScreen({ route }) {
   const { width } = useWindowDimensions();
   const isTablet = width > 600;
 
-  // Safely handle when navigating directly (no params)
-  const lastHabit = route.params?.lastHabit ?? "—";
-  const lastStreak = route.params?.lastStreak ?? 0;
+  // route.params puede ser undefined si se navega directo (seguridad)
+  const lastHabit    = route.params?.lastHabit    ?? "—";
+  const lastStreak   = route.params?.lastStreak   ?? 0;
+  const lastFailures = route.params?.lastFailures ?? 0;
   const lastCategory = route.params?.lastCategory ?? "—";
-  const lastIcon = route.params?.lastIcon ?? "🏅";
+  const lastIcon     = route.params?.lastIcon     ?? "🏅";
+  const lastColor    = route.params?.lastColor    ?? "#2563EB";
+  const lastLevel    = route.params?.lastLevel    ?? "start";
 
-  // Computed global stats from all habits
+  // Estadísticas globales calculadas con useMemo
   const stats = useMemo(() => {
-    const totalStreak = habits.reduce((acc, h) => acc + h.streak, 0);
-    const totalFailures = habits.reduce((acc, h) => acc + h.failures, 0);
-    const perfectHabits = habits.filter((h) => h.failures === 0).length;
-    const avgStreak = (totalStreak / habits.length).toFixed(1);
-    return { totalStreak, totalFailures, perfectHabits, avgStreak };
+    const totalStreak  = habits.reduce((a, h) => a + h.streak, 0);
+    const totalFails   = habits.reduce((a, h) => a + h.failures, 0);
+    const perfectCount = habits.filter((h) => h.failures === 0).length;
+    const avgStreak    = (totalStreak / habits.length).toFixed(1);
+    const topHabit     = habits.reduce((top, h) => (h.streak > top.streak ? h : top), habits[0]);
+    return { totalStreak, totalFails, perfectCount, avgStreak, topHabit };
   }, []);
 
   const statsList = useMemo(
     () => [
-      { id: "1", label: "Racha total acumulada", value: `🔥 ${stats.totalStreak} días`, color: "#F59E0B" },
-      { id: "2", label: "Hábitos sin fallas", value: `✅ ${stats.perfectHabits}`, color: "#10B981" },
-      { id: "3", label: "Racha promedio", value: `📈 ${stats.avgStreak}`, color: "#3B82F6" },
-      { id: "4", label: "Fallas totales", value: `❌ ${stats.totalFailures}`, color: "#EF4444" },
+      { id: "1", label: "Racha total acumulada",   value: `🔥 ${stats.totalStreak} días`, color: "#F59E0B" },
+      { id: "2", label: "Hábitos sin ninguna falla", value: `✅ ${stats.perfectCount}`,    color: "#10B981" },
+      { id: "3", label: "Racha promedio",            value: `📈 ${stats.avgStreak} días`,  color: "#3B82F6" },
+      { id: "4", label: "Fallas totales registradas",value: `❌ ${stats.totalFails}`,       color: "#EF4444" },
+      {
+        id: "5",
+        label: "Hábito estrella",
+        value: `${stats.topHabit.icon} ${stats.topHabit.name} (${stats.topHabit.streak}d)`,
+        color: stats.topHabit.color,
+      },
     ],
     [stats]
   );
+
+  const levelColor = getLevelColor(lastLevel);
+  const levelLabel = getLevelLabel(lastLevel);
 
   return (
     <ScrollView
@@ -53,159 +68,156 @@ export default function ProfileScreen({ route }) {
         styles.container,
         { paddingHorizontal: isTablet ? 60 : 20 },
       ]}
+      showsVerticalScrollIndicator={false}
     >
-      {/* Avatar / header */}
-      <View style={styles.avatarSection}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarEmoji}>🧑‍💪</Text>
+      {/* Cabecera con logo */}
+      <View style={styles.profileHeader}>
+        <AppLogo size={isTablet ? "md" : "sm"} />
+        <View style={styles.avatarWrap}>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarEmoji}>🧑‍💪</Text>
+          </View>
         </View>
-        <Text style={[styles.name, { fontSize: isTablet ? 26 : 22 }]}>
-          Camilo Hábitos
+        <Text style={[styles.name, { fontSize: isTablet ? 24 : 20 }]}>
+          {userProfile.name}
         </Text>
-        <Text style={styles.subtitle}>Construyendo disciplina diaria 💪</Text>
+        <Text style={styles.username}>{userProfile.username}</Text>
+        <Text style={styles.joined}>Miembro desde {userProfile.joinedDate}</Text>
+
+        {/* Meta personal */}
+        <View style={styles.goalBadge}>
+          <Text style={styles.goalText}>🎯 {userProfile.goal}</Text>
+        </View>
       </View>
 
-      {/* Last viewed habit */}
-      <View style={styles.lastHabitCard}>
-        <Text style={styles.sectionTitle}>Último hábito consultado</Text>
-        <View style={styles.lastHabitRow}>
-          <Text style={styles.lastHabitIcon}>{lastIcon}</Text>
-          <View>
-            <Text style={styles.lastHabitName}>{lastHabit}</Text>
-            <Text style={styles.lastHabitMeta}>
-              {lastCategory} · 🔥 {lastStreak} días de racha
+      {/* Último hábito consultado */}
+      <Text style={styles.sectionTitle}>Último hábito consultado</Text>
+      <View style={[styles.lastCard, { borderLeftColor: lastColor }]}>
+        <Text style={styles.lastIcon}>{lastIcon}</Text>
+        <View style={styles.lastInfo}>
+          <Text style={styles.lastName}>{lastHabit}</Text>
+          <Text style={styles.lastMeta}>
+            {lastCategory} · 🔥 {lastStreak} días · ❌ {lastFailures} fallas
+          </Text>
+          <View style={[styles.levelBadge, { backgroundColor: levelColor + "18" }]}>
+            <Text style={[styles.levelText, { color: levelColor }]}>
+              {levelLabel}
             </Text>
           </View>
         </View>
       </View>
 
-      {/* Global stats using FlatList */}
+      {/* Estadísticas globales con FlatList */}
       <Text style={styles.sectionTitle}>Resumen general</Text>
       <FlatList
         data={statsList}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <StatItem label={item.label} value={item.value} color={item.color} />
+          <StatRow label={item.label} value={item.value} color={item.color} />
         )}
         scrollEnabled={false}
-        ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
-        style={styles.statsList}
+        ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
       />
 
-      {/* Total habits count */}
+      {/* Total hábitos */}
       <View style={styles.totalCard}>
         <Text style={styles.totalNumber}>{habits.length}</Text>
-        <Text style={styles.totalLabel}>hábitos registrados en total</Text>
+        <Text style={styles.totalLabel}>hábitos activos registrados</Text>
       </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  scroll: {
-    flex: 1,
-    backgroundColor: "#F1F5F9",
-  },
-  container: {
-    paddingVertical: 24,
-    paddingBottom: 40,
-  },
-  avatarSection: {
+  scroll: { flex: 1, backgroundColor: "#F1F5F9" },
+  container: { paddingTop: 24, paddingBottom: 40 },
+  profileHeader: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    padding: 24,
     alignItems: "center",
     marginBottom: 24,
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOpacity: 0.07,
+    shadowRadius: 8,
   },
+  avatarWrap: { marginTop: 16, marginBottom: 8 },
   avatar: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
+    width: 86,
+    height: 86,
+    borderRadius: 43,
     backgroundColor: "#2563EB",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 12,
     elevation: 4,
   },
-  avatarEmoji: {
-    fontSize: 44,
+  avatarEmoji: { fontSize: 44 },
+  name: { fontWeight: "800", color: "#1E293B", marginBottom: 3 },
+  username: { fontSize: 14, color: "#64748B", marginBottom: 2 },
+  joined: { fontSize: 12, color: "#94A3B8", marginBottom: 12 },
+  goalBadge: {
+    backgroundColor: "#EFF6FF",
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#BFDBFE",
   },
-  name: {
-    fontWeight: "800",
-    color: "#1E293B",
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: "#64748B",
-  },
-  lastHabitCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    padding: 18,
-    marginBottom: 20,
-    elevation: 2,
-  },
+  goalText: { fontSize: 12, color: "#2563EB", fontWeight: "600" },
   sectionTitle: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "700",
     color: "#94A3B8",
     textTransform: "uppercase",
-    letterSpacing: 1,
-    marginBottom: 12,
+    letterSpacing: 0.8,
+    marginBottom: 10,
   },
-  lastHabitRow: {
+  lastCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 16,
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: 14,
+    marginBottom: 22,
+    borderLeftWidth: 5,
+    elevation: 2,
   },
-  lastHabitIcon: {
-    fontSize: 36,
+  lastIcon: { fontSize: 38 },
+  lastInfo: { flex: 1 },
+  lastName: { fontSize: 17, fontWeight: "700", color: "#1E293B", marginBottom: 3 },
+  lastMeta: { fontSize: 13, color: "#64748B", marginBottom: 6 },
+  levelBadge: {
+    alignSelf: "flex-start",
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 20,
   },
-  lastHabitName: {
-    fontSize: 17,
-    fontWeight: "700",
-    color: "#1E293B",
-    marginBottom: 2,
-  },
-  lastHabitMeta: {
-    fontSize: 13,
-    color: "#64748B",
-  },
-  statsList: {
-    marginBottom: 20,
-  },
-  statItem: {
+  levelText: { fontSize: 11, fontWeight: "700" },
+  statRow: {
     backgroundColor: "#FFFFFF",
     borderRadius: 14,
     padding: 16,
-    borderLeftWidth: 4,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    borderLeftWidth: 4,
     elevation: 2,
+    shadowColor: "#000",
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
   },
-  statValue: {
-    fontSize: 16,
-    fontWeight: "700",
-  },
-  statLabel: {
-    fontSize: 13,
-    color: "#64748B",
-    flex: 1,
-    textAlign: "right",
-  },
+  statRowLabel: { fontSize: 13, color: "#475569", flex: 1 },
+  statRowValue: { fontSize: 14, fontWeight: "700" },
   totalCard: {
     backgroundColor: "#2563EB",
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: 18,
+    padding: 22,
     alignItems: "center",
+    marginTop: 20,
+    elevation: 4,
   },
-  totalNumber: {
-    fontSize: 48,
-    fontWeight: "900",
-    color: "#FFFFFF",
-  },
-  totalLabel: {
-    fontSize: 14,
-    color: "#BFDBFE",
-    marginTop: 4,
-  },
+  totalNumber: { fontSize: 52, fontWeight: "900", color: "#FFFFFF" },
+  totalLabel: { fontSize: 14, color: "#BFDBFE", marginTop: 4 },
 });

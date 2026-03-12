@@ -1,51 +1,86 @@
 import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet, useWindowDimensions } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  useWindowDimensions,
+} from "react-native";
+import { evaluateHabit, getLevelColor, getLevelLabel } from "../utils/habitRules";
 
+/**
+ * HabitCard — tarjeta de un hábito en la lista principal.
+ * Usa React.memo para evitar re-renders innecesarios.
+ */
 const HabitCard = React.memo(({ habit, onPress }) => {
   const { width } = useWindowDimensions();
   const isTablet = width > 600;
+
+  const evaluation = React.useMemo(
+    () => evaluateHabit(habit.streak, habit.failures),
+    [habit.streak, habit.failures]
+  );
+  const levelColor = getLevelColor(evaluation.level);
+  const levelLabel = getLevelLabel(evaluation.level);
 
   return (
     <TouchableOpacity
       style={[styles.card, { marginHorizontal: isTablet ? 40 : 16 }]}
       onPress={() => onPress(habit)}
-      activeOpacity={0.85}
+      activeOpacity={0.82}
     >
-      {/* Left accent bar */}
+      {/* Barra de color izquierda */}
       <View style={[styles.accentBar, { backgroundColor: habit.color }]} />
 
       <View style={styles.content}>
-        {/* Top row: icon + name + category badge */}
+        {/* Fila superior: icono + nombre + badge categoría */}
         <View style={styles.topRow}>
-          <Text style={styles.icon}>{habit.icon}</Text>
+          <View style={[styles.iconWrap, { backgroundColor: habit.color + "18" }]}>
+            <Text style={[styles.icon, { fontSize: isTablet ? 28 : 24 }]}>
+              {habit.icon}
+            </Text>
+          </View>
           <View style={styles.nameBlock}>
-            <Text style={[styles.title, { fontSize: isTablet ? 20 : 17 }]}>{habit.name}</Text>
-            <View style={[styles.badge, { backgroundColor: habit.color + "22" }]}>
-              <Text style={[styles.badgeText, { color: habit.color }]}>{habit.category}</Text>
+            <Text
+              style={[styles.title, { fontSize: isTablet ? 18 : 16 }]}
+              numberOfLines={1}
+            >
+              {habit.name}
+            </Text>
+            <View style={styles.badgeRow}>
+              <View style={[styles.badge, { backgroundColor: habit.color + "22" }]}>
+                <Text style={[styles.badgeText, { color: habit.color }]}>
+                  {habit.category}
+                </Text>
+              </View>
+              <View style={[styles.badge, { backgroundColor: levelColor + "18" }]}>
+                <Text style={[styles.badgeText, { color: levelColor }]}>
+                  {levelLabel}
+                </Text>
+              </View>
             </View>
           </View>
         </View>
 
-        {/* Bottom row: streak + failures */}
+        {/* Fila de stats */}
         <View style={styles.statsRow}>
           <View style={styles.stat}>
-            <Text style={styles.statValue}>🔥 {habit.streak}</Text>
-            <Text style={styles.statLabel}>días racha</Text>
+            <Text style={styles.statVal}>🔥 {habit.streak}</Text>
+            <Text style={styles.statLbl}>días racha</Text>
           </View>
-          <View style={styles.divider} />
+          <View style={styles.sep} />
           <View style={styles.stat}>
-            <Text style={styles.statValue}>❌ {habit.failures}</Text>
-            <Text style={styles.statLabel}>fallas</Text>
+            <Text style={styles.statVal}>❌ {habit.failures}</Text>
+            <Text style={styles.statLbl}>fallas</Text>
           </View>
-          <View style={styles.divider} />
+          <View style={styles.sep} />
           <View style={styles.stat}>
-            <Text style={styles.statValue}>🎯 {habit.goal}</Text>
-            <Text style={styles.statLabel}>{habit.unit}</Text>
+            <Text style={styles.statVal}>🎯 {habit.goal}</Text>
+            <Text style={styles.statLbl}>{habit.unit}</Text>
           </View>
         </View>
       </View>
 
-      {/* Arrow */}
       <Text style={styles.arrow}>›</Text>
     </TouchableOpacity>
   );
@@ -54,14 +89,14 @@ const HabitCard = React.memo(({ habit, onPress }) => {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    marginVertical: 8,
+    borderRadius: 18,
+    marginVertical: 7,
     flexDirection: "row",
     alignItems: "center",
     overflow: "hidden",
     elevation: 3,
-    shadowColor: "#000",
-    shadowOpacity: 0.08,
+    shadowColor: "#0F172A",
+    shadowOpacity: 0.07,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 2 },
   },
@@ -78,9 +113,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 10,
   },
-  icon: {
-    fontSize: 28,
+  iconWrap: {
+    width: 46,
+    height: 46,
+    borderRadius: 14,
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 10,
+  },
+  icon: {
+    lineHeight: 46,
   },
   nameBlock: {
     flex: 1,
@@ -88,46 +130,49 @@ const styles = StyleSheet.create({
   title: {
     fontWeight: "700",
     color: "#1E293B",
-    marginBottom: 4,
+    marginBottom: 5,
+  },
+  badgeRow: {
+    flexDirection: "row",
+    gap: 6,
   },
   badge: {
-    alignSelf: "flex-start",
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 20,
   },
   badgeText: {
-    fontSize: 11,
-    fontWeight: "600",
+    fontSize: 10,
+    fontWeight: "700",
   },
   statsRow: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#F8FAFC",
-    borderRadius: 10,
-    padding: 8,
+    borderRadius: 12,
+    padding: 10,
   },
   stat: {
     flex: 1,
     alignItems: "center",
   },
-  statValue: {
+  statVal: {
     fontSize: 13,
     fontWeight: "700",
     color: "#1E293B",
   },
-  statLabel: {
+  statLbl: {
     fontSize: 10,
     color: "#94A3B8",
     marginTop: 2,
   },
-  divider: {
+  sep: {
     width: 1,
-    height: 24,
+    height: 26,
     backgroundColor: "#E2E8F0",
   },
   arrow: {
-    fontSize: 24,
+    fontSize: 26,
     color: "#CBD5E1",
     paddingRight: 12,
   },
